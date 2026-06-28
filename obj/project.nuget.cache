@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "P2JCResUUIM=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Brisa\\Desktop\\Universidad\\Programacion 3\\repo profe\\TP_P3M3N3_2026\\TP_P3M3N3_2026.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Brisa\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.2\\microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+    "C:\\Users\\Brisa\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.2\\microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512",
+    "C:\\Users\\Brisa\\.nuget\\packages\\mysqlconnector\\2.6.1\\mysqlconnector.2.6.1.nupkg.sha512"
+  ],
+  "logs": []
+}

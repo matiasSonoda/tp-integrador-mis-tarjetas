@@ -1,11 +1,22 @@
 using System;
-using MySql.Data.MySqlClient; 
+using System.Threading.Tasks;
+using MySqlConnector;
+using System.Text;
 
 namespace Progra3Card.Administrativo
 {
     class Program
     {
         private static string connectionString = "Server=localhost;Database=mi_banco_db;Uid=root;Pwd=;";
+        private static Dictionary<string,int> prefijosBancos = new Dictionary<string, int>
+        {
+            {"banco nacion", 4512},
+            {"banco provincia", 4513},
+            {"banco galicia", 4514},
+            {"banco santander", 4515},
+            {"banco bbva", 4516},
+            {"banco macro", 4517}
+        };
 
         static void Main(string[] args)
         {
@@ -43,7 +54,27 @@ namespace Progra3Card.Administrativo
 
         // Funciones a completar:
 
-        static void MenuListarTarjetas()
+        static async Task MenuEmitirTarjeta()
+        {
+            Console.Clear();
+            Console.WriteLine("--- EMITIR TARJETA ---");
+            Console.WriteLine("Ingrese DNI titular");
+            string dni = Console.ReadLine();
+            Console.WriteLine("Ingrese banco emisor: ");
+            string banco = Console.ReadLine();
+
+            int resultado = await EmitirTarjeta(dni, banco);
+            if (resultado > 0)
+            {
+                Console.WriteLine("Tarjeta creada con exito");
+            }
+            else
+            {
+                Console.WriteLine("No se pudo crear la tarjeta");
+            }
+        }
+
+        static async Task MenuListarTarjetas()
         {
             Console.Clear();
             Console.WriteLine("--- LISTADO GENERAL DE TARJETAS ---");
@@ -54,30 +85,45 @@ namespace Progra3Card.Administrativo
             // Aquí deben implementar un SELECT sobre la tabla 'tarjetas'
             // para recorrer las filas e imprimirlas en la consola.
             
-            ObtenerYMostrarTarjetas();
+            await ObtenerYMostrarTarjetas();
 
             Console.WriteLine("\nPresione una tecla para volver al menú...");
             Console.ReadKey();
         }
 
-        static void MenuVerDetalleTarjeta()
+        static async Task MenuVerDetalleTarjeta()
         {
             Console.Clear();
             Console.WriteLine("--- DETALLE DE TARJETA Y CLIENTE ---");
             Console.Write("Ingrese el Número de Cuenta a consultar: ");
-            int numCuenta = Convert.ToInt32(Console.ReadLine());
+            //int numCuenta = Convert.ToInt32(Console.ReadLine());
+            if(int.TryParse(Console.ReadLine(), out int numCuenta))
+            {
+                try
+                {
+                    await MostrarDetalleCompleto(numCuenta);
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Error al consultar: {ex.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Numero de cuenta invalido");
+            }
 
             // === A realizar ===
             // Aquí deben realizar un SELECT con un JOIN entre 'tarjetas' y 'usuarios' 
             // filtrando por el numCuenta para traer todos los campos (Nombre, Apellido, Email, Saldo, etc.)
             
-            MostrarDetalleCompleto(numCuenta);
+            //await MostrarDetalleCompleto(numCuenta);
 
             Console.WriteLine("\nPresione una tecla para volver al menú...");
             Console.ReadKey();
         }
 
-        static void MenuEliminarTarjeta()
+        static async Task MenuEliminarTarjeta()
         {
             Console.Clear();
             Console.WriteLine("--- ELIMINAR TARJETA DEL SISTEMA ---");
@@ -96,7 +142,7 @@ namespace Progra3Card.Administrativo
                 // Como definimos ON DELETE CASCADE en la base de datos, las liquidaciones se borrarán solas.
                 // Opcional: Evaluar si también eliminan al usuario de la tabla 'usuarios' o si lo mantienen.
                 
-                bool exito = DarDeBajaTarjeta(numCuenta);
+                bool exito = await DarDeBajaTarjeta(numCuenta);
 
                 if (exito)
                     Console.WriteLine("\nTarjeta eliminada correctamente del sistema.");
@@ -112,27 +158,168 @@ namespace Progra3Card.Administrativo
             Console.ReadKey();
         }
 
+        static async Task MenuEmitirLiquidacion()
+        {
+            
+        }
 
         // =========================================================================
         // MÉTODOS BASE QUE DEBEN COMPLETAR CON LA LÓGICA 
         // =========================================================================
 
-        static void ObtenerYMostrarTarjetas()
+        static async Task<int> EmitirTarjeta(string dni, string banco)
+        {
+            string binDelBanco = prefijosBancos[banco.ToLower()].ToString();
+            string identificadorDeCuenta = generarIdentificadorDeCuenta();
+            string binEIdentificador = $"{binDelBanco}{identificadorDeCuenta}";
+            string numeroTarjetaCreada = calcularAlgoritmoDeLuhn(binEIdentificador);
+            string sql = "INSERT INTO tarjetas (numero_tarjeta,banco_emisor,dni_titular) VALUES(@numeroTarjetaCreada,@banco,@dni)";
+            using var connection = new MySqlConnection(connectionString);
+            using var command = new MySqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@numeroTarjetaCreada",numeroTarjetaCreada);
+            command.Parameters.AddWithValue("@banco",banco);
+            command.Parameters.AddWithValue("@dni",dni);
+            int resultado = await command.ExecuteNonQueryAsync();
+            return resultado;
+        }
+        static async Task ObtenerYMostrarTarjetas()
         {
             // Completar 
             // Ejemplo de impresión dentro del bucle: 
             // Console.WriteLine("{0,-12} {1,-18} {2,-20} {3,-15}", reader["num_cuenta"], reader["numero_tarjeta"], ...);
+            const string sql = "SELECT * FROM tarjetas;";
+            using var connection = new MySqlConnection(connectionString);
+            using var command = new MySqlCommand(sql, connection);
+
+            await connection.OpenAsync();
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                Console.WriteLine($"\nNumero de cuenta: {reader["num_cuenta"]}\n"+
+                                  $"Numero de tarjeta: {reader["numero_tarjeta"]}\n"+
+                                  $"Banco emisor: {reader["banco_emisor"]}\n"+
+                                  $"Estado: {reader["estado"]}\n"+
+                                  $"Saldo: {reader["saldo"]}\n"+
+                                  $"Dni titular: {reader["dni_titular"]}\n"
+                                  );
+            }
+
         }
 
-        static void MostrarDetalleCompleto(int cuenta)
+        static async Task MostrarDetalleCompleto(int cuenta)
         {
             // Completar haciendo un SELECT con JOIN de usuarios y tarjetas WHERE num_cuenta = @cuenta
+                        // === A realizar ===
+            // Aquí deben realizar un SELECT con un JOIN entre 'tarjetas' y 'usuarios' 
+            // filtrando por el numCuenta para traer todos los campos (Nombre, Apellido, Email, Saldo, etc.)
+            const string sql = "SELECT * FROM tarjetas t " + 
+                               "JOIN usuarios u " +
+                               "ON t.dni_titular = u.documento " +
+                               "WHERE t.num_cuenta = @cuenta";
+            
+            using var connection = new MySqlConnection(connectionString);
+            using var command = new MySqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@cuenta", cuenta);
+            await connection.OpenAsync();
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                Console.WriteLine("\nDATOS DE USUARIO\n");
+                Console.WriteLine($"{reader["tipo_doc"]}: {reader["documento"]}\n" +
+                                  $"Nombre: {reader["nombre"]}\n" +
+                                  $"Apellido: {reader["apellido"]}\n" +
+                                  $"Fecha de nacimiento: {reader["fecha_nacimiento"]}\n" +
+                                  $"Email: {reader["email"]}\n" +
+                                  $"Usuario: {reader["usuario"]}\n" +
+                                  $"Password: {reader["password"]}\n" +
+                                  $"Creado el: {reader["creado_el"]}\n");
+                Console.WriteLine("DATOS DE TARJETA\n");
+                Console.WriteLine($"Numero de cuenta: {reader["num_cuenta"]}\n" +
+                                  $"Numero de tarjeta: {reader["numero_tarjeta"]}\n" +
+                                  $"Banco emisor: {reader["banco_emisor"]}\n" +
+                                  $"Estado: {reader["estado"]}\n" +
+                                  $"Saldo: {reader["saldo"]}\n" +
+                                  $"DNI titular: {reader["dni_titular"]}");
+            }
+            else
+            {
+                Console.WriteLine("NO SE ENCONTRARON COINCIDENCIAS");
+            }
+
         }
 
-        static bool DarDeBajaTarjeta(int cuenta)
+        static async Task<bool> DarDeBajaTarjeta(int cuenta)
         {
+            // === A realizar ===
+                // Aquí deben ejecutar un DELETE sobre la tabla 'tarjetas' donde num_cuenta = numCuenta.
+                // Como definimos ON DELETE CASCADE en la base de datos, las liquidaciones se borrarán solas.
+                // Opcional: Evaluar si también eliminan al usuario de la tabla 'usuarios' o si lo mantienen.
             // Completar usando un DELETE FROM tarjetas WHERE num_cuenta = @cuenta
-            return false;
+            string sql = "DELETE FROM tarjetas WHERE num_cuenta = @cuenta";
+            using var connection = new MySqlConnection(connectionString);
+            using var command = new MySqlCommand(sql,connection);
+            command.Parameters.AddWithValue("@cuenta", cuenta);
+
+            await connection.OpenAsync();
+
+            int filasAfectadas = await command.ExecuteNonQueryAsync();
+
+            return filasAfectadas > 0;
+        }
+
+        // =========================================================================
+        // MÉTODOS UTILS
+        // =========================================================================
+        private static string generarIdentificadorDeCuenta(int longitud = 11)
+        {
+            var constructorTexto = new StringBuilder(longitud);
+            for (int i = 0; i < longitud; i++)
+            {
+                int digitoAleatorio = Random.Shared.Next(0,10);
+                constructorTexto.Append(digitoAleatorio);
+            }
+            return constructorTexto.ToString();
+        }
+        private static string calcularAlgoritmoDeLuhn(string binEIdentificador)
+        {
+            int acumulador = 0;
+            int aux = 0;
+            int multiplo = 0;
+            int multiplicador = 0;
+            int luhn;
+            string numeroTarjeta;
+            for(int i = binEIdentificador.Length - 1; i >= 0; i--)
+            {
+                if ( i % 2 == 0 )
+                {
+                    aux = acumulador + (int.Parse(binEIdentificador[i].ToString()) * 2);
+                    if (aux > 9)
+                    {
+                        aux = aux - 9;
+                        acumulador += aux;
+                    }
+                    else
+                    {
+                        acumulador += aux;
+                    }
+                }
+                else
+                {
+                    acumulador += int.Parse(binEIdentificador[i].ToString());
+                }
+            }
+            while(acumulador > multiplo)
+            {
+                multiplicador++;
+                multiplo = 10 * multiplicador;
+            }
+            luhn = multiplo - acumulador;
+            numeroTarjeta = $"{binEIdentificador}{luhn.ToString()}";
+            return numeroTarjeta;
         }
     }
 }
