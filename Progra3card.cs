@@ -29,23 +29,25 @@ namespace Progra3Card.Administrativo
                 Console.WriteLine("========================================");
                 Console.WriteLine("    SISTEMA ADMINISTRATIVO PROGRA3CARD   ");
                 Console.WriteLine("========================================");
-                Console.WriteLine("1. Emitir Nueva Tarjeta (Alta de Cliente)");
-                Console.WriteLine("2. Listar Tarjetas");
-                Console.WriteLine("3. Ver Detalle de una Tarjeta / Cliente");
-                Console.WriteLine("4. Eliminar Tarjeta (Baja de Sistema)");
-                Console.WriteLine("5. Emitir Nueva Liquidación Mensual");
-                Console.WriteLine("6. Salir");
+                Console.WriteLine("1. Emitir Nuevo Usuario (Alta de Usuario)");
+                Console.WriteLine("2. Emitir Nueva Tarjeta (Alta de Cliente)");
+                Console.WriteLine("3. Listar Tarjetas");
+                Console.WriteLine("4. Ver Detalle de una Tarjeta / Cliente");
+                Console.WriteLine("5. Eliminar Tarjeta (Baja de Sistema)");
+                Console.WriteLine("6. Emitir Nueva Liquidación Mensual");
+                Console.WriteLine("7. Salir");
                 Console.WriteLine("========================================");
                 Console.Write("Seleccione una opción: ");
 
                 switch (Console.ReadLine())
                 {
-                    case "1": await MenuEmitirTarjeta(); break;
-                    case "2": await MenuListarTarjetas(); break;
-                    case "3": await MenuVerDetalleTarjeta(); break;
-                    case "4": await MenuEliminarTarjeta(); break;
-                    case "5": await MenuEmitirLiquidacion(); break;
-                    case "6": salir = true; break;
+                    case "1": await MenuEmitirUsuario(); break;
+                    case "2": await MenuEmitirTarjeta(); break;
+                    case "3": await MenuListarTarjetas(); break;
+                    case "4": await MenuVerDetalleTarjeta(); break;
+                    case "5": await MenuEliminarTarjeta(); break;
+                    case "6": await MenuEmitirLiquidacion(); break;
+                    case "7": salir = true; break;
                     default:
                         Console.WriteLine("Opción no válida. Presione una tecla para continuar...");
                         Console.ReadKey();
@@ -58,19 +60,49 @@ namespace Progra3Card.Administrativo
 
         static async Task MenuEmitirUsuario()
         {
-            string sql = "INSERT INTO usuarios(documento,tipo_doc,nombre,apellido,fecha_nacimiento,email,usuario,password) VALUES('20055645','DNI','Emiliano','Martinez','1985-04-12','martinez@example.com', NULL, NULL);";
-            using var connection = new MySqlConnection(connectionString);
-            using var command = new MySqlCommand(sql, connection);
-            await connection.OpenAsync();
-            int rows = command.ExecuteNonQuery();
-            if (rows > 0)
-            {
-                Console.WriteLine("Se creo el usuario");
+            try{
+                Console.WriteLine("Ingrese numero de documento.");
+                string documento = Console.ReadLine();
+                Console.WriteLine("Ingrese tipo de documento.");
+                string tipo_doc = Console.ReadLine();
+                Console.WriteLine("Ingrese el nombre del nuevo usuario");
+                string nombre = Console.ReadLine();
+                Console.WriteLine("Ingrese el apellido del nuevo usuario");
+                string apellido = Console.ReadLine();
+                Console.WriteLine("Ingrese fecha de nacimiento del nuevo usuario (formato: YYYY-MM-DD).");
+                string fecha_nacimiento = Console.ReadLine();
+                Console.WriteLine("Ingrese el email del nuevo usuario.");
+                string email = Console.ReadLine();
+                string sql = "INSERT INTO usuarios(documento,tipo_doc,nombre,apellido,fecha_nacimiento,email,usuario,password)" +
+                            "VALUES(@documento,@tipo_doc,@nombre,@apellido,@fecha_nacimiento,@email, NULL, NULL);";
+                using var connection = new MySqlConnection(connectionString);
+                using var command = new MySqlCommand(sql, connection);
+                command.Parameters.AddWithValue("@documento",documento);
+                command.Parameters.AddWithValue("@tipo_doc",tipo_doc);
+                command.Parameters.AddWithValue("@nombre",nombre);
+                command.Parameters.AddWithValue("@apellido",apellido);
+                command.Parameters.AddWithValue("@fecha_nacimiento",fecha_nacimiento);
+                command.Parameters.AddWithValue("@email",email);
+                await connection.OpenAsync();
+                int rows = command.ExecuteNonQuery();
+                if (rows > 0)
+                {
+                    Console.WriteLine("Se creo el usuario");
+                }
+                else
+                {
+                    Console.WriteLine("no se creo el usuario");
+                }
             }
-            else
+            catch (MySqlException ex)
             {
-                Console.WriteLine("no se creo el usuario");
+                Console.WriteLine($"Error en la base de datos: {ex.Message}");
             }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error al intentar crear el usuario: {ex.Message}");
+            }
+
         }
 
         static async Task MenuEmitirTarjeta()
