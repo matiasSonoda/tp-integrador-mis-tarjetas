@@ -2,6 +2,8 @@ using System;
 using System.Threading.Tasks;
 using MySqlConnector;
 using System.Text;
+using System.Data;
+using System.ComponentModel;
 
 namespace Progra3Card.Administrativo
 {
@@ -18,12 +20,12 @@ namespace Progra3Card.Administrativo
             {"banco macro", 4517}
         };
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             bool salir = false;
             while (!salir)
             {
-                Console.Clear();
+                //Console.Clear();
                 Console.WriteLine("========================================");
                 Console.WriteLine("    SISTEMA ADMINISTRATIVO PROGRA3CARD   ");
                 Console.WriteLine("========================================");
@@ -38,11 +40,11 @@ namespace Progra3Card.Administrativo
 
                 switch (Console.ReadLine())
                 {
-                    case "1": MenuEmitirTarjeta(); break;
-                    case "2": MenuListarTarjetas(); break;
-                    case "3": MenuVerDetalleTarjeta(); break;
-                    case "4": MenuEliminarTarjeta(); break;
-                    case "5": MenuEmitirLiquidacion(); break;
+                    case "1": await MenuEmitirTarjeta(); break;
+                    case "2": await MenuListarTarjetas(); break;
+                    case "3": await MenuVerDetalleTarjeta(); break;
+                    case "4": await MenuEliminarTarjeta(); break;
+                    case "5": await MenuEmitirLiquidacion(); break;
                     case "6": salir = true; break;
                     default:
                         Console.WriteLine("Opción no válida. Presione una tecla para continuar...");
@@ -54,23 +56,46 @@ namespace Progra3Card.Administrativo
 
         // Funciones a completar:
 
-        static async Task MenuEmitirTarjeta()
+        static async Task MenuEmitirUsuario()
         {
-            Console.Clear();
-            Console.WriteLine("--- EMITIR TARJETA ---");
-            Console.WriteLine("Ingrese DNI titular");
-            string dni = Console.ReadLine();
-            Console.WriteLine("Ingrese banco emisor: ");
-            string banco = Console.ReadLine();
-
-            int resultado = await EmitirTarjeta(dni, banco);
-            if (resultado > 0)
+            string sql = "INSERT INTO usuarios(documento,tipo_doc,nombre,apellido,fecha_nacimiento,email,usuario,password) VALUES('20055645','DNI','Emiliano','Martinez','1985-04-12','martinez@example.com', NULL, NULL);";
+            using var connection = new MySqlConnection(connectionString);
+            using var command = new MySqlCommand(sql, connection);
+            await connection.OpenAsync();
+            int rows = command.ExecuteNonQuery();
+            if (rows > 0)
             {
-                Console.WriteLine("Tarjeta creada con exito");
+                Console.WriteLine("Se creo el usuario");
             }
             else
             {
-                Console.WriteLine("No se pudo crear la tarjeta");
+                Console.WriteLine("no se creo el usuario");
+            }
+        }
+
+        static async Task MenuEmitirTarjeta()
+        {
+            try{
+                Console.Clear();
+                Console.WriteLine("--- EMITIR TARJETA ---");
+                Console.WriteLine("Ingrese DNI titular");
+                string dni = Console.ReadLine();
+                Console.WriteLine($"{dni}");
+                Console.WriteLine("Ingrese banco emisor: ");
+                string banco = Console.ReadLine();
+                Console.WriteLine($"{banco}");
+                int resultado = await EmitirTarjeta(dni, banco);
+                if (resultado > 0)
+                {
+                    Console.WriteLine("Tarjeta creada con exito");
+                }
+                else
+                {
+                    Console.WriteLine("No se pudo crear la tarjeta");
+                }
+            }catch(Exception ex)
+            {
+                Console.WriteLine($"Error en menu de emitir tarjeta: {ex.Message}");
             }
         }
 
@@ -160,7 +185,57 @@ namespace Progra3Card.Administrativo
 
         static async Task MenuEmitirLiquidacion()
         {
-            
+            try{
+            /*CREATE TABLE IF NOT EXISTS liquidaciones (
+                id_liquidacion INT AUTO_INCREMENT PRIMARY KEY,
+                num_cuenta INT NOT NULL,
+                periodo VARCHAR(7) NOT NULL, -- Formato: 'YYYY-MM'
+                fecha_vencimiento DATE NOT NULL,
+                total_a_pagar DECIMAL(10,2) NOT NULL,
+                pago_minimo DECIMAL(10,2) NOT NULL,
+                FOREIGN KEY (num_cuenta) REFERENCES tarjetas(num_cuenta) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            */ 
+            Console.WriteLine("Ingrese numero de cuenta de la tarjeta:\n");
+            long num_cuenta = long.Parse(Console.ReadLine());
+            Console.WriteLine("Ingrese periodo: (formato: 'YYYY-MM')\n");
+            string periodo = Console.ReadLine();
+            Console.WriteLine("Ingrese fecha vencimiento: (formato: 'YYYY-MM-DD')\n");
+            string fecha_vencimiento = Console.ReadLine();
+            Console.WriteLine("Ingrese total a pagar:\n");
+            decimal total_a_pagar = decimal.Parse(Console.ReadLine());
+            Console.WriteLine("Ingrese pago minimo\n");
+            decimal pago_minimo = decimal.Parse(Console.ReadLine());
+
+            string sql = "INSERT INTO liquidaciones(num_cuenta,periodo,fecha_vencimiento,total_a_pagar,pago_minimo)" +
+                         "VALUES(@num_cuenta,@periodo,@fecha_vencimiento,@total_a_pagar,@pago_minimo)";
+            using var connection = new MySqlConnection(connectionString);
+            using var command = new MySqlCommand(sql, connection);
+            await connection.OpenAsync();
+
+            command.Parameters.AddWithValue("@num_cuenta",num_cuenta);
+            command.Parameters.AddWithValue("@periodo",periodo);
+            command.Parameters.AddWithValue("@fecha_vencimiento",fecha_vencimiento);
+            command.Parameters.AddWithValue("@total_a_pagar",total_a_pagar);
+            command.Parameters.AddWithValue("@pago_minimo",pago_minimo);
+            int rows = await command.ExecuteNonQueryAsync();
+            if (rows > 0)
+            {
+                Console.WriteLine("Se creo la liquidacion con exito");
+            }
+            else
+            {
+                Console.WriteLine("No se pudo crear la liquidacion");
+                }
+            }
+            catch(MySqlException ex)
+            {
+                Console.WriteLine($"Error en la base de datos: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al crear la liquidacion: {ex.Message}");
+            }
         }
 
         // =========================================================================
@@ -169,18 +244,36 @@ namespace Progra3Card.Administrativo
 
         static async Task<int> EmitirTarjeta(string dni, string banco)
         {
-            string binDelBanco = prefijosBancos[banco.ToLower()].ToString();
-            string identificadorDeCuenta = generarIdentificadorDeCuenta();
-            string binEIdentificador = $"{binDelBanco}{identificadorDeCuenta}";
-            string numeroTarjetaCreada = calcularAlgoritmoDeLuhn(binEIdentificador);
-            string sql = "INSERT INTO tarjetas (numero_tarjeta,banco_emisor,dni_titular) VALUES(@numeroTarjetaCreada,@banco,@dni)";
-            using var connection = new MySqlConnection(connectionString);
-            using var command = new MySqlCommand(sql, connection);
-            command.Parameters.AddWithValue("@numeroTarjetaCreada",numeroTarjetaCreada);
-            command.Parameters.AddWithValue("@banco",banco);
-            command.Parameters.AddWithValue("@dni",dni);
-            int resultado = await command.ExecuteNonQueryAsync();
-            return resultado;
+            try{
+                Console.WriteLine("Estoy dentro de emitirtarjeta");
+                //string binDelBanco = prefijosBancos[banco.ToLower()].ToString();
+                if (!prefijosBancos.TryGetValue(banco.ToLower(), out int binDelBanco))
+                {
+                    throw new ArgumentException($"El banco '{banco}' no esta registrado");
+                }
+
+                string identificadorDeCuenta = generarIdentificadorDeCuenta();
+                string binEIdentificador = $"{binDelBanco}{identificadorDeCuenta}";
+                string numeroTarjetaCreada = calcularAlgoritmoDeLuhn(binEIdentificador);
+                string sql = "INSERT INTO tarjetas (numero_tarjeta,banco_emisor,dni_titular) VALUES(@numeroTarjetaCreada,@banco,@dni)";
+                using var connection = new MySqlConnection(connectionString);
+                using var command = new MySqlCommand(sql, connection);
+                await connection.OpenAsync();
+                command.Parameters.AddWithValue("@numeroTarjetaCreada",numeroTarjetaCreada);
+                command.Parameters.AddWithValue("@banco",banco);
+                command.Parameters.AddWithValue("@dni",dni);
+                int resultado = await command.ExecuteNonQueryAsync();
+                return resultado;
+            }catch(MySqlException ex)
+            {
+                Console.WriteLine($"Error en la base de datos: {ex.Message}");
+                return 0;
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error al emitir la tarjeta: {ex.Message}");
+                return 0;
+            }
         }
         static async Task ObtenerYMostrarTarjetas()
         {
