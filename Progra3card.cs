@@ -135,8 +135,8 @@ namespace Progra3Card.Administrativo
         {
             Console.Clear();
             Console.WriteLine("--- LISTADO GENERAL DE TARJETAS ---");
-            Console.WriteLine("{0,-12} {1,-18} {2,-20} {3,-15}", "Nro Cuenta", "Nro Tarjeta", "Banco Emisor", "DNI Titular");
-            Console.WriteLine("----------------------------------------------------------------------");
+            Console.WriteLine("{0,-12}{1,-18}{2,-20}{3,-10}{4,-12}{5,-15}", "Nro Cuenta", "Nro Tarjeta", "Banco Emisor", "Estado", "Saldo", "DNI Titular");            
+            Console.WriteLine("------------------------------------------------------------------------------------------------------------------------");
 
             // === A realizar ===
             // Aquí deben implementar un SELECT sobre la tabla 'tarjetas'
@@ -153,7 +153,6 @@ namespace Progra3Card.Administrativo
             Console.Clear();
             Console.WriteLine("--- DETALLE DE TARJETA Y CLIENTE ---");
             Console.Write("Ingrese el Número de Cuenta a consultar: ");
-            //int numCuenta = Convert.ToInt32(Console.ReadLine());
             if(int.TryParse(Console.ReadLine(), out int numCuenta))
             {
                 try
@@ -218,16 +217,6 @@ namespace Progra3Card.Administrativo
         static async Task MenuEmitirLiquidacion()
         {
             try{
-            /*CREATE TABLE IF NOT EXISTS liquidaciones (
-                id_liquidacion INT AUTO_INCREMENT PRIMARY KEY,
-                num_cuenta INT NOT NULL,
-                periodo VARCHAR(7) NOT NULL, -- Formato: 'YYYY-MM'
-                fecha_vencimiento DATE NOT NULL,
-                total_a_pagar DECIMAL(10,2) NOT NULL,
-                pago_minimo DECIMAL(10,2) NOT NULL,
-                FOREIGN KEY (num_cuenta) REFERENCES tarjetas(num_cuenta) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            */ 
             Console.WriteLine("Ingrese numero de cuenta de la tarjeta:\n");
             long num_cuenta = long.Parse(Console.ReadLine());
             Console.WriteLine("Ingrese periodo: (formato: 'YYYY-MM')\n");
@@ -322,12 +311,12 @@ namespace Progra3Card.Administrativo
 
             while (await reader.ReadAsync())
             {
-                Console.WriteLine($"\nNumero de cuenta: {reader["num_cuenta"]}\n"+
-                                  $"Numero de tarjeta: {reader["numero_tarjeta"]}\n"+
-                                  $"Banco emisor: {reader["banco_emisor"]}\n"+
-                                  $"Estado: {reader["estado"]}\n"+
-                                  $"Saldo: {reader["saldo"]}\n"+
-                                  $"Dni titular: {reader["dni_titular"]}\n"
+                Console.WriteLine($"{reader["num_cuenta"],-12}"+
+                                  $"{reader["numero_tarjeta"],-18}"+
+                                  $"{reader["banco_emisor"],-20}"+
+                                  $"{reader["estado"],-10}"+
+                                  $"{reader["saldo"],-12}"+
+                                  $"{reader["dni_titular"],-15}"
                                   );
             }
 
