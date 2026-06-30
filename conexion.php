@@ -1,7 +1,7 @@
 <?php
     $servidor = "localhost";
     $usuario = "root";
-    $password = "";
+    $password = "root";
     $baseDatos = "mi_banco_db";
 
     $conexion = new mysqli($servidor, $usuario, $password, $baseDatos);
@@ -11,6 +11,4 @@
     } else {
         echo "Conexión exitosa a MySQL <br>";
     }
-    
-    $conexion->close();
 ?>
