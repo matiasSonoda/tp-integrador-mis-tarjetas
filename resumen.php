@@ -10,12 +10,9 @@ if(!isset($_SESSION["documento"]))
 
 require("conexion.php");
 
-
 $documento = $_SESSION["documento"];
 
-
 // Buscar la tarjeta del usuario
-
 $sqlTarjeta =
 "
 SELECT num_cuenta,
@@ -40,7 +37,6 @@ $stmt->close();
 
 
 // Buscar la liquidación más reciente
-
 $sqlActual =
 "
 SELECT *
@@ -60,7 +56,6 @@ $actual = $stmt->get_result();
 
 
 // Buscar historial
-
 $sqlHistorial =
 "
 SELECT *
@@ -107,7 +102,7 @@ if($actual->num_rows>0)
 
     echo "Período: ".$fila["periodo"]."<br>";
     echo "Vencimiento: ".$fila["fecha_vencimiento"]."<br>";
-    echo "Total: $".$fila["importe_total"]."<br>";
+    echo "Total: $".$fila["total_a_pagar"]."<br>";
 }
 else
 {
@@ -142,7 +137,7 @@ while($fila=$historial->fetch_assoc())
 
 <td><?php echo $fila["periodo"]; ?></td>
 
-<td><?php echo $fila["importe_total"]; ?></td>
+<td><?php echo $fila["total_a_pagar"]; ?></td>
 
 <td><?php echo $fila["fecha_vencimiento"]; ?></td>
 
