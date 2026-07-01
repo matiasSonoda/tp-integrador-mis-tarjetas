@@ -1,6 +1,10 @@
-﻿# UTN FRH Tecnicatura Universitaria en P rogramación #
+﻿# UTN FRH Tecnicatura Universitaria en Programación #
 # Programación III 2026 #
 # TP Integrador: Sistema de Consulta de Liquidaciones "Mis Tarjetas" 💳
+## **INTEGRANTES:**
+    - Perez Bejar Nuriasky (30822)
+    - Pol Maria Daniela (38426)
+    - Sonoda Matias (30268)
 
 ¡Bienvenido al Trabajo Práctico Integrador de la asignatura **Programación III**! En este proyecto vas a trabajar en la integración de plataformas implementando un ecosistema donde una aplicación de escritorio y un portal web comparten la misma base de datos relacional.
 
